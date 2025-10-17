@@ -12,66 +12,71 @@
   tasks:
     - name: Updated apt cache
       apt:
-        updated_cache: yes
+        update_cache: yes             
         cache_valid_time: 3600
-
+    
     - name: Install Mysql Server
       apt:
         name:
           - mysql-server
           - python3-pymysql
-      state: present
+        state: present                 
     
     - name: Start and enable mysql
       service:
         name: mysql
-        state: present 
+        state: started                 
         enabled: yes
-
+    
     - name: Configure MySQl to Listen on all interfaces
-      Lineinfile:
-        path: /etc/mysqld/mysql.conf.d/mysqld.cnf
+      lineinfile:                      
+        path: /etc/mysql/mysql.conf.d/mysqld.cnf  
         regexp: '^bind-address'
         line: 'bind-address = 0.0.0.0'  
         backup: yes
       notify: Restart MySQL
-
+    
+    - name: Create Wordpress database
+      mysql_db:                       
+        name: "{{ db_name }}"
+        state: present
+        login_unix_socket: /var/run/mysqld/mysqld.sock
+    
     - name: Create Wordpress database user
-      mysqldb_user:
+      mysql_user:                     
         name: "{{ db_user }}"
         password: "{{ db_password }}"
         priv: "{{ db_name }}.*:ALL"
         host: '%'
         state: present
         login_unix_socket: /var/run/mysqld/mysqld.sock
-
+    
     - name: Ensure Mysql is Listening
       wait_for:
         port: 3306
         delay: 2
-
             
   handlers:
-    - name: Restart MySQl
-      systemmd:
+    - name: Restart MySQL
+      systemd:                        
         name: mysql
         state: restarted
 
 - name: Setup Wordpress Web Server
-    hosts: web_server
-    become: yes
-    vars: 
-      db_host: "192.168.56.1"
-      db_name: "wordpress"
-      db_user: "wpuser"
-      db_password: "wppassword123"
-
+  hosts: web_server                    
+  become: yes
+  vars: 
+    db_host: "192.168.56.17"           
+    db_name: "devops_ansi"             
+    db_user: "devopsansi_user"        
+    db_password: "wppassword123"
+  
   tasks:
     - name: Updated apt cache
       apt:
-        updated_cache: yes
-        cacahe_valid_time: 3600
-
+        update_cache: yes             
+        cache_valid_time: 3600         
+    
     - name: Install Apache and dependencies
       apt:
         name:
@@ -94,25 +99,24 @@
     - name: Start and enable apache
       systemd: 
         name: apache2
-        state: present
+        state: started                 
         enabled: yes
             
     - name: Download Wordpress
       get_url:
         url: https://wordpress.org/latest.tar.gz
         dest: /tmp/wordpress.tar.gz
-
-
+    
     - name: Extract Wordpress
-      unarchieve:
+      unarchive:       
         src: /tmp/wordpress.tar.gz
         dest: /tmp/
         remote_src: yes
-
+    
     - name: Remove default Apache content
       file:
-          path: /var/www/html/index.html
-          state: absent
+        path: /var/www/html/index.html
+        state: absent
     
     - name: Copy wordpress files to web root
       copy:
@@ -122,12 +126,27 @@
         owner: www-data
         group: www-data
         mode: '0755'
+    
+    - name: Create wp-config.php from sample
+      copy:                            # ✓ Added: Missing step!
+        src: /var/www/html/wp-config-sample.php
+        dest: /var/www/html/wp-config.php
+        remote_src: yes
+        owner: www-data
+        group: www-data
+        mode: '0644'
         
     - name: Configure database name in wp-config.php
       replace: 
         path: /var/www/html/wp-config.php
         regexp: "database_name_here"
-        replace: "{{ db_name }}"  
+        replace: "{{ db_name }}"
+    
+    - name: Configure database user in wp-config.php
+      replace:                         # ✓ Added: Missing step!
+        path: /var/www/html/wp-config.php
+        regexp: "username_here"
+        replace: "{{ db_user }}"
         
     - name: Configure database password in wp-config.php
       replace:
@@ -138,7 +157,7 @@
     - name: Configure database host in wp-config.php
       replace: 
         path: /var/www/html/wp-config.php
-        regex: "localhost" 
+        regexp: "localhost"            # ✓ Fixed: was "regex"
         replace: "{{ db_host }}"
         
     - name: Set correct permission
@@ -147,19 +166,18 @@
         owner: www-data
         group: www-data
         recurse: yes
-
+    
     - name: Test Mysql connection from web server
       command: mysqladmin -h {{ db_host }} -u {{ db_user }} -p{{ db_password }} ping
       register: mysql_test
       failed_when: false
       changed_when: false
-
+    
     - name: Display connection status
       debug: 
         msg: "MySQL connection: {{ 'SUCCESS' if mysql_test.rc == 0 else 'FAILED' }}"
-
+    
     - name: Restart Apache
       systemd:
         name: apache2
-        state: restarted
-
+        state: restarted        
