@@ -1,0 +1,5 @@
+db_host: "192.168.56.17"
+db_name: "devops_ansi"
+db_user: "devopsansi_user"
+db_password: "wppassword123"
+apache_port: 80
