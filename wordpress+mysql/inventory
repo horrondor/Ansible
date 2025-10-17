@@ -1,0 +1,13 @@
+[db_server]
+
+db ansible_host=192.168.56.  ansible_user=vagrant 
+
+
+[web_server]
+
+web ansible_host=192.168.56. ansible_user=vagrant 
+
+
+[all:vars]
+ansible_python_interpreter=/usr/bin/python3
+
