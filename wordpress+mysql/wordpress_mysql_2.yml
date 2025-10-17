@@ -2,13 +2,6 @@
 - name: Setup Mysql database 
   hosts: db_server
   become: yes
-  vars:
-    mysql_root_password: "root123"
-    db_name: "devops_ansi"
-    db_user: "devopsansi_user"
-    db_password: "wppassword123"
-    wordpress_server_ip: "192.168.56.16" 
-   
   tasks:
     - name: Updated apt cache
       apt:
@@ -65,12 +58,6 @@
 - name: Setup Wordpress Web Server
   hosts: web_server                    
   become: yes
-  vars: 
-    db_host: "192.168.56.17"           
-    db_name: "devops_ansi"             
-    db_user: "devopsansi_user"        
-    db_password: "wppassword123"
-  
   tasks:
     - name: Updated apt cache
       apt:
@@ -128,7 +115,7 @@
         mode: '0755'
     
     - name: Create wp-config.php from sample
-      copy:                            # ✓ Added: Missing step!
+      copy:                           
         src: /var/www/html/wp-config-sample.php
         dest: /var/www/html/wp-config.php
         remote_src: yes
@@ -143,7 +130,7 @@
         replace: "{{ db_name }}"
     
     - name: Configure database user in wp-config.php
-      replace:                         # ✓ Added: Missing step!
+      replace:                        
         path: /var/www/html/wp-config.php
         regexp: "username_here"
         replace: "{{ db_user }}"
@@ -157,7 +144,7 @@
     - name: Configure database host in wp-config.php
       replace: 
         path: /var/www/html/wp-config.php
-        regexp: "localhost"            # ✓ Fixed: was "regex"
+        regexp: "localhost"            
         replace: "{{ db_host }}"
         
     - name: Set correct permission
