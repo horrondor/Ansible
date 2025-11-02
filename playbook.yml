@@ -1,0 +1,49 @@
+---
+# - name: Apache setup //Playbook_name
+#  hosts: web
+#  become: yes  
+#  tasks:
+#   - name: Install apache2 pkg
+#     apt: 
+#      name: apache2
+#      state: present
+        
+#   - name: start and enable apache2 service
+#     service:
+#       name: apache2
+#       state: started
+#       enabled: yes  
+   
+#   - name: Copy index file to apche2 server
+#     copy:
+#      src: index.html
+#      dest: /var/www/html/index.html  
+
+- name: Setup DB
+  hosts: db
+  become: yes  
+  tasks: 
+   - name: Install mysql server
+     apt:
+       name: mysql-server
+       state: present
+       update_cache: yes   
+         
+   - name: start and enable Db
+     service:
+       name: mysql
+       state: started
+       enabled: yes     
+    
+   - name: Create database 
+     community.mysql.mysql_db:
+       name: devops_db
+       state: present
+       login_unix_socket: /run/mysqld/mysqld.sock
+
+   - name: Create Db user 
+     community.mysql.mysql_user:
+       name: appuser
+       priv: 'devops_db.*:All'
+       state: present   
+       login_unix_socket: /run/mysqld/mysqld.sock  
