@@ -1,0 +1,85 @@
+#SPDX-License-Identifier: MIT-0
+---
+# tasks file for Ntpserverapp
+- name: apt cache
+  apt:
+    update_cache: yes
+    cache_valid_time: 3600
+  when: ansible_distribution == "Ubuntu"
+
+- name: Install Chrony on Ubuntu
+  apt:
+    name: "{{ item }}"
+    state: present
+  when: ansible_distribution == "Ubuntu"
+  loop: "{{ package_name }}"
+
+- name: Install Chrony on Rocky
+  yum:
+    name: "{{ item }}"
+    state: present
+  when: ansible_distribution == "Rocky"
+  loop: "{{ package_name }}"
+
+- name: Restart and enable chrony
+  service:
+    name: chronyd
+    state: started
+    enabled: yes
+
+- name: Add motd msg
+  copy:
+    content: "This {{ansible_distribution}} is managed by ansible. \n"
+    dest: /etc/motd
+
+- name: copy banner.txt
+  copy:
+    src: banner.txt
+    dest: /etc/ssh/
+
+- name: Search and replace in ssh config file
+  lineinfile:
+    path: /etc/ssh/sshd_config
+    regex: "#Banner none"
+    line: "Banner /etc/ssh/banner.txt"
+    state: present
+  notify:
+      - Restart ssh for ubuntu
+      - Restart ssh for Rocky
+
+- name: Restart ssh for ubuntu
+  service:
+    name: ssh
+    state: restarted
+    enabled: yes
+  when: ansible_distribution == "Ubuntu"
+
+- name: Restart ssh for Rocky
+  service:
+    name: sshd
+    state: restarted
+    enabled: yes
+  when: ansible_distribution == "Rocky"
+
+- name: Add user
+  user:
+    name: user1
+    shell: /bin/bash/
+    state: present
+
+- name: Update ntp conf file on ubuntu
+  template:
+    src: ubuntu.chrony.conf.j2
+    dest: /etc/chrony/chrony.conf
+  when: ansible_distribution == "Ubuntu"
+  notify:
+    - Restart chronyd service
+
+- name: Update ntp conf file on Rocky
+  template:
+    src: rocky.chrony.conf.j2
+    dest: /etc/chrony.conf
+  when: ansible_distribution == "Rocky"
+  notify:
+    - Restart chronyd service
+  

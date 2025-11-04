@@ -1,0 +1,15 @@
+#SPDX-License-Identifier: MIT-0
+---
+# defaults file for Ntpserverapp
+
+package_name:
+  - chrony
+  - wget
+  - zip
+  - unzip
+  - git
+
+ntp0: 0.europe.pool.ntp.org
+ntp1: 1.europe.pool.ntp.org
+ntp2: 2.europe.pool.ntp.org
+ntp3: 3.europe.pool.ntp.org

@@ -1,0 +1,5 @@
+mysql_root_password: "root123"
+db_name: "devops_ansi"
+db_user: "devopsansi_user"
+db_password: "wppassword123"
+mysql_port: 3306
